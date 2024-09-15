@@ -1,0 +1,68 @@
+O: OK pinentry-op ready
+---
+I: OPTION no-grab
+O: OK ignored command
+---
+I: OPTION allow-external-password-cache
+O: OK ignored command
+---
+I: OPTION default-ok=_OK
+O: OK ignored command
+---
+I: OPTION default-cancel=_Cancel
+O: OK ignored command
+---
+I: OPTION default-yes=_Yes
+O: OK ignored command
+---
+I: OPTION default-no=_No
+O: OK ignored command
+---
+I: OPTION default-prompt=PIN:
+O: OK ignored command
+---
+I: OPTION default-pwmngr=_Save in password manager
+O: OK ignored command
+---
+I: OPTION default-cf-visi=Do you really want to make your passphrase visible on the screen?
+O: OK ignored command
+---
+I: OPTION default-tt-visi=Make passphrase visible
+O: OK ignored command
+---
+I: OPTION default-tt-hide=Hide passphrase
+O: OK ignored command
+---
+I: OPTION default-capshint=Caps Lock is on
+O: OK ignored command
+---
+I: OPTION touch-file=C:\Users\Fnu\AppData\Local\gnupg\S.gpg-agent
+O: OK ignored command
+---
+I: GETINFO flavor
+O: OK ignored command
+---
+I: GETINFO version
+O: OK ignored command
+---
+I: GETINFO ttyinfo
+O: OK ignored command
+---
+I: GETINFO pid
+O: OK ignored command
+---
+I: SETKEYINFO n/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+O: OK ignored command
+---
+I: SETDESC Please enter the passphrase to unlock the OpenPGP secret key:%0A%22Fnu Lnu <fnu@example.com>%22%0A4096-bit RSA key, ID XXXXXXXXXXXXXXXX,%0Acreated 2020-01-01.%0A
+O: OK ignored command
+---
+I: SETPROMPT Passphrase:
+O: OK ignored command
+---
+I: GETPIN
+O: D ********
+O: OK
+---
+I: BYE
+O: OK
