@@ -32,7 +32,7 @@ fn handle<O: Write>(req: &str, out: &mut O) -> io::Result<bool> {
         None       => (req, ""),
     };
 
-    match cmd {
+    match cmd.to_ascii_uppercase().as_str() {
         "GETPIN" => handle_getpin (out),
         "BYE"    => handle_bye    (out),
         "FOO"    => handle_unknown(out),
