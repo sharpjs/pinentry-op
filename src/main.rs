@@ -35,6 +35,7 @@ fn handle<O: Write>(req: &str, out: &mut O) -> io::Result<bool> {
     match cmd.to_ascii_uppercase().as_str() {
         "GETPIN" => handle_getpin (out),
         "BYE"    => handle_bye    (out),
+        "NOP"    => handle_nop    (out),
         "FOO"    => handle_unknown(out),
         _        => handle_ignored(out),
     }
@@ -58,6 +59,11 @@ fn handle_unknown<O: Write>(out: &mut O) -> io::Result<bool> {
 fn handle_getpin<O: Write>(out: &mut O) -> io::Result<bool> {
     let pin = get_pin()?;
     writeln!(out, "D {}", pin)?;
+    writeln!(out, "OK")?;
+    Ok(true)
+}
+
+fn handle_nop<O: Write>(out: &mut O) -> io::Result<bool> {
     writeln!(out, "OK")?;
     Ok(true)
 }
