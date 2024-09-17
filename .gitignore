@@ -2,3 +2,4 @@
 # SPDX-License-Identifier: ISC
 
 /target
+/test.txt*
