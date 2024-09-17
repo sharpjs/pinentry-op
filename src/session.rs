@@ -17,12 +17,13 @@ use std::process::Command;
 #[derive(Debug)]
 pub struct Session<O: Write> {
     out:      O,
+    item_ref: String,
     cache_ok: bool,
 }
 
 impl<O: Write> Session<O> {
-    pub fn new(out: O) -> Self {
-        Self { out, cache_ok: false }
+    pub fn new(item_ref: String, out: O) -> Self {
+        Self { out, item_ref, cache_ok: false }
     }
 
     pub fn announce(&mut self) -> io::Result<()> {
@@ -78,7 +79,7 @@ impl<O: Write> Session<O> {
     }
 
     fn handle_getpin(&mut self) -> io::Result<bool> {
-        let pin = get_pin()?;
+        let pin = get_pin(&self.item_ref)?;
         if self.cache_ok {
             writeln!(self.out, "S PASSWORD_FROM_CACHE")?;
         }
@@ -93,13 +94,10 @@ impl<O: Write> Session<O> {
     }
 }
 
-fn get_pin() -> io::Result<String> {
+fn get_pin(item_ref: &str) -> io::Result<String> {
     use io::{Error, ErrorKind};
 
-    let result = Command::new("op")
-        .arg("read")
-        .arg("op://(vaultid)/(itemid)/password")
-        .output()?;
+    let result = Command::new("op").arg("read").arg(item_ref).output()?;
 
     if !result.status.success() {
         return Err(Error::new(ErrorKind::Other, "1Password CLI encountered an error"));
