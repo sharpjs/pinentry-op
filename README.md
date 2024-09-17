@@ -41,7 +41,7 @@ gpg --sign --dry-run --yes test.txt
 
 1Password should prompt to authorize gpg-agent for CLI access.
 
-![1Password authorization prompt screenshot](doc\op-prompt.png)
+![1Password authorization prompt screenshot](https://github.com/sharpjs/pinentry-op/blob/main/doc/op-prompt.png?raw=true)
 
 <!--
 Copyright Jeffrey Sharp
