@@ -27,6 +27,10 @@ impl<O: Write> Session<O> {
     }
 
     pub fn announce(&mut self) -> io::Result<()> {
+        if cfg!(debug_assertions) {
+            writeln!(self.out, "# pinentry-op v0.1.0")?;
+            writeln!(self.out, "# passphrase: {}", self.item_ref)?;
+        }
         writeln!(self.out, "OK pinentry-op ready")
     }
 
