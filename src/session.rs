@@ -37,15 +37,15 @@ impl<O: Write> Session<O> {
         };
 
         let ret = match cmd.to_ascii_uppercase().as_str() {
-            "BYE"        => self.handle_bye    (),
-            "RESET"      => self.handle_nop    (), // TODO
-            "HELP"       => self.handle_nop    (), // TODO
-            "OPTION"     => self.handle_option (rest),
-            "GETINFO"    => self.handle_nop    (), // TODO
-            "SETKEYINFO" => self.handle_nop    (), // TODO
-            "SETDESC"    => self.handle_nop    (), // TODO
-            "SETPROMPT"  => self.handle_nop    (), // TODO
-            "GETPIN"     => self.handle_getpin (),
+            "BYE"        => self.handle_bye(),
+            "RESET"      => self.handle_nop(),          // TODO
+            "HELP"       => self.handle_nop(),          // TODO
+            "OPTION"     => self.handle_option(rest),
+            "GETINFO"    => self.handle_nop(),          // TODO
+            "SETKEYINFO" => self.handle_nop(),          // TODO
+            "SETDESC"    => self.handle_nop(),          // TODO
+            "SETPROMPT"  => self.handle_nop(),          // TODO
+            "GETPIN"     => self.handle_getpin(),
             "FOO"        => self.handle_unknown(),
             _            => self.handle_ignored(),
         };
