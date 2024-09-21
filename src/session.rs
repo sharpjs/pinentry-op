@@ -124,3 +124,20 @@ fn get_pin(item_ref: &str) -> io::Result<String> {
 fn is_not_ascii_newline(c: char) -> bool {
     !matches!(c, '\r' | '\n')
 }
+
+#[cfg(test)]
+mod tests {
+    use std::str;
+    use super::*;
+
+    #[test]
+    fn bye() {
+        let mut out     = vec![];
+        let mut session = Session::new("any".to_string(), &mut out);
+
+        let result = session.handle("BYE any");
+
+        assert!(matches!(result, Ok(false)));
+        assert_eq!(str::from_utf8(&out[..]), Ok("OK closing connection\n"));
+    }
+}
