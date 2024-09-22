@@ -12,7 +12,7 @@
 // https://developer.1password.com/docs/cli/reference/management-commands/item
 
 use std::io::{self, Write};
-use std::process::{self, Command};
+use std::process::{self, Command, Output};
 
 const FLAVOR:  &str = "op";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -31,11 +31,12 @@ pub struct Session<'a, O: Write> {
     out:      O,
     item_ref: &'a str,
     cache_ok: bool,
+    run:      fn(&mut Command) -> io::Result<Output>,
 }
 
 impl<'a, O: Write> Session<'a, O> {
     pub fn new(item_ref: &'a str, out: O) -> Self {
-        Self { out, item_ref, cache_ok: false }
+        Self { out, item_ref, cache_ok: false, run: Command::output }
     }
 
     pub fn announce(&mut self) -> io::Result<()> {
@@ -153,7 +154,7 @@ impl<'a, O: Write> Session<'a, O> {
     }
 
     fn handle_getpin(&mut self) -> io::Result<bool> {
-        let pin = get_pin(&self.item_ref)?;
+        let pin = get_pin(&self.item_ref, self.run)?;
         if self.cache_ok {
             writeln!(self.out, "S PASSWORD_FROM_CACHE")?;
         }
@@ -174,10 +175,10 @@ impl<'a, O: Write> Session<'a, O> {
     }
 }
 
-fn get_pin(item_ref: &str) -> io::Result<String> {
+fn get_pin(item_ref: &str, run: fn(&mut Command) -> io::Result<Output>) -> io::Result<String> {
     use io::{Error, ErrorKind};
 
-    let result = Command::new("op").arg("read").arg(item_ref).output()?;
+    let result = run(Command::new("op").arg("read").arg(item_ref))?;
 
     if !result.status.success() {
         return Err(Error::new(ErrorKind::Other, "1Password CLI encountered an error"));
@@ -204,6 +205,8 @@ fn is_not_ascii_newline(c: char) -> bool {
 #[cfg(test)]
 mod tests {
     use std::str;
+    use process::ExitStatus;
+
     use super::*;
 
     #[test]
@@ -222,6 +225,23 @@ mod tests {
             .test("GetInfo Flavor" , true, format!("D {}\nOK\n", FLAVOR))
             .test("GetInfo Pid",     true, format!("D {}\nOK\n", process::id()))
             .test("GetInfo TtyInfo", true, "D - - - - 0/0 -\nOK\n")
+        ;
+    }
+
+    #[test]
+    fn getpin() {
+        with_session()
+            .set_getpin_ok()
+            .test("GETPIN", true, "D test-pin\nOK\n")
+        ;
+    }
+
+    #[test]
+    fn getpin_cache_ok() {
+        with_session()
+            .set_cache_ok(true)
+            .set_getpin_ok()
+            .test("GETPIN", true, "S PASSWORD_FROM_CACHE\nD test-pin\nOK\n")
         ;
     }
 
@@ -270,13 +290,27 @@ mod tests {
     struct Harness(Session<'static, Vec<u8>>);
 
     fn with_session() -> Harness {
-        Harness(Session::new("test", vec![]))
+        let mut session = Session::new("test", vec![]);
+        session.run = run_panic;
+        Harness(session)
+    }
+
+    fn run_ok(_: &mut Command) -> io::Result<Output> {
+        Ok(Output { status: ExitStatus::default(), stdout: b"test-pin".to_vec(), stderr: vec![] })
+    }
+
+    fn run_panic(_: &mut Command) -> io::Result<Output> {
+        panic!()
     }
 
     impl Harness {
-        fn set_cache_ok(mut self, v: bool) -> Self
-        {
+        fn set_cache_ok(mut self, v: bool) -> Self {
             self.0.cache_ok = v;
+            self
+        }
+
+        fn set_getpin_ok(mut self) -> Self {
+            self.0.run = run_ok;
             self
         }
 
