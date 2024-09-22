@@ -76,7 +76,7 @@ impl<O: Write> Session<O> {
                 (H,       'E') => He, 
                 (He,      'L') => Hel,
                 (Hel,     'P') => Help,
-                (Help,    ' ') => break self.handle_nop(),
+                (Help,    ' ') => break self.handle_help(),
 
                 (Initial, 'O') => O,    
                 (O,       'P') => Op,   
@@ -93,7 +93,7 @@ impl<O: Write> Session<O> {
                 (Rese,    'T') => Reset,
                 (Reset,   ' ') => break self.handle_nop(),
 
-                _              => break self.handle_ignored(),
+                _              => break self.handle_nop(),
             };
         };
 
@@ -106,20 +106,20 @@ impl<O: Write> Session<O> {
         Ok(true)
     }
 
-    fn handle_ignored(&mut self) -> io::Result<bool> {
-        writeln!(self.out, "OK ignored command")?;
-        Ok(true)
-    }
-
-    fn handle_unknown(&mut self) -> io::Result<bool> {
-        writeln!(self.out, "ERR 275 unsupported command")?;
+    fn handle_help(&mut self) -> io::Result<bool> {
+        writeln!(self.out, "# BYE")?;
+        writeln!(self.out, "# GETINFO <what>")?;
+        writeln!(self.out, "# GETPIN")?;
+        writeln!(self.out, "# HELP")?;
+        writeln!(self.out, "# OPTION <name> [ [=] <value> ]")?;
+        writeln!(self.out, "# RESET")?;
+        writeln!(self.out, "OK")?;
         Ok(true)
     }
 
     fn handle_option(&mut self, rest: &str) -> io::Result<bool> {
-        match rest.to_ascii_lowercase().as_str() {
-            "allow-external-password-cache" => { self.cache_ok = true },
-            _                               => { },
+        if rest.eq_ignore_ascii_case("allow-external-password-cache") {
+            self.cache_ok = true
         }
         writeln!(self.out, "OK")?;
         Ok(true)
