@@ -205,12 +205,27 @@ mod tests {
 
     #[test]
     fn bye() {
-        let mut out     = vec![];
-        let mut session = Session::new("any", &mut out);
+        with_session()
+        .test("BYE any", false, "OK closing connection\n");
+    }
 
-        let result = session.handle("BYE any");
+    #[derive(Debug)]
+    struct Harness(Session<'static, Vec<u8>>);
 
-        assert!(matches!(result, Ok(false)));
-        assert_eq!(str::from_utf8(&out[..]), Ok("OK closing connection\n"));
+    fn with_session() -> Harness {
+        Harness(Session::new("test", vec![]))
+    }
+
+    impl Harness {
+        fn test(mut self, input: &str, result: bool, output: &str) -> Self {
+            let res = self.0.handle(input).unwrap();
+            let out = str::from_utf8(&self.0.out[..]).unwrap();
+
+            assert_eq!(res, result);
+            assert_eq!(out, output);
+
+            self.0.out.clear();
+            self
+        }
     }
 }
