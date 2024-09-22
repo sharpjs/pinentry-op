@@ -94,7 +94,7 @@ impl<O: Write> Session<O> {
                 (Re,      'S') => Res, 
                 (Res,     'E') => Rese,
                 (Rese,    'T') => Reset,
-                (Reset,   ' ') => break self.handle_nop(),
+                (Reset,   ' ') => break self.handle_reset(),
 
                 _              => break self.handle_nop(),
             };
@@ -155,6 +155,12 @@ impl<O: Write> Session<O> {
             writeln!(self.out, "S PASSWORD_FROM_CACHE")?;
         }
         writeln!(self.out, "D {}", pin)?;
+        writeln!(self.out, "OK")?;
+        Ok(true)
+    }
+
+    fn handle_reset(&mut self) -> io::Result<bool> {
+        self.cache_ok = false;
         writeln!(self.out, "OK")?;
         Ok(true)
     }
