@@ -16,6 +16,15 @@ use std::process::{self, Command};
 
 const FLAVOR:  &str = "op";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+const HELP:    &str = "\
+    # BYE\n\
+    # GETINFO { flavor | version | pid | ttyinfo }\n\
+    # GETPIN\n\
+    # HELP\n\
+    # OPTION <name> [ [=] <value> ]\n\
+    # RESET\n\
+    OK\n\
+";
 
 #[derive(Debug)]
 pub struct Session<'a, O: Write> {
@@ -110,13 +119,7 @@ impl<'a, O: Write> Session<'a, O> {
     }
 
     fn handle_help(&mut self) -> io::Result<bool> {
-        writeln!(self.out, "# BYE")?;
-        writeln!(self.out, "# GETINFO {{ flavor | version | pid | ttyinfo }}")?;
-        writeln!(self.out, "# GETPIN")?;
-        writeln!(self.out, "# HELP")?;
-        writeln!(self.out, "# OPTION <name> [ [=] <value> ]")?;
-        writeln!(self.out, "# RESET")?;
-        writeln!(self.out, "OK")?;
+        write!(self.out, "{}", HELP)?;
         Ok(true)
     }
 
