@@ -12,7 +12,10 @@
 // https://developer.1password.com/docs/cli/reference/management-commands/item
 
 use std::io::{self, Write};
-use std::process::Command;
+use std::process::{self, Command};
+
+const FLAVOR:  &str = "op";
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug)]
 pub struct Session<O: Write> {
@@ -65,7 +68,7 @@ impl<O: Write> Session<O> {
                 (Geti,    'N') => Getin, 
                 (Getin,   'F') => Getinf,
                 (Getinf,  'O') => Getinfo,
-                (Getinfo, ' ') => break self.handle_nop(),
+                (Getinfo, ' ') => break self.handle_getinfo(chars.as_str()),
 
                 (Get,     'P') => Getp, 
                 (Getp,    'I') => Getpi,
@@ -108,7 +111,7 @@ impl<O: Write> Session<O> {
 
     fn handle_help(&mut self) -> io::Result<bool> {
         writeln!(self.out, "# BYE")?;
-        writeln!(self.out, "# GETINFO <what>")?;
+        writeln!(self.out, "# GETINFO {{ flavor | version | pid | ttyinfo }}")?;
         writeln!(self.out, "# GETPIN")?;
         writeln!(self.out, "# HELP")?;
         writeln!(self.out, "# OPTION <name> [ [=] <value> ]")?;
@@ -117,8 +120,29 @@ impl<O: Write> Session<O> {
         Ok(true)
     }
 
-    fn handle_option(&mut self, rest: &str) -> io::Result<bool> {
-        if rest.eq_ignore_ascii_case("allow-external-password-cache") {
+    fn handle_getinfo(&mut self, arg: &str) -> io::Result<bool> {
+        let c = arg.chars().nth(0).unwrap_or_default().to_ascii_lowercase();
+        match c {
+            'f' if arg.eq_ignore_ascii_case("flavor") => {
+                writeln!(self.out, "D {}", FLAVOR)?
+            },
+            'v' if arg.eq_ignore_ascii_case("version") => {
+                writeln!(self.out, "D {}", VERSION)?
+            },
+            'p' if arg.eq_ignore_ascii_case("pid") => {
+                writeln!(self.out, "D {}", process::id())?
+            },
+            't' if arg.eq_ignore_ascii_case("ttyinfo") => {
+                writeln!(self.out, "D - - - - 0/0 -")?
+            },
+            _ => (),
+        }
+        writeln!(self.out, "OK")?;
+        Ok(true)
+    }
+
+    fn handle_option(&mut self, arg: &str) -> io::Result<bool> {
+        if arg.eq_ignore_ascii_case("allow-external-password-cache") {
             self.cache_ok = true
         }
         writeln!(self.out, "OK")?;
