@@ -18,14 +18,14 @@ const FLAVOR:  &str = "op";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug)]
-pub struct Session<O: Write> {
+pub struct Session<'a, O: Write> {
     out:      O,
-    item_ref: String,
+    item_ref: &'a str,
     cache_ok: bool,
 }
 
-impl<O: Write> Session<O> {
-    pub fn new(item_ref: String, out: O) -> Self {
+impl<'a, O: Write> Session<'a, O> {
+    pub fn new(item_ref: &'a str, out: O) -> Self {
         Self { out, item_ref, cache_ok: false }
     }
 
@@ -206,7 +206,7 @@ mod tests {
     #[test]
     fn bye() {
         let mut out     = vec![];
-        let mut session = Session::new("any".to_string(), &mut out);
+        let mut session = Session::new("any", &mut out);
 
         let result = session.handle("BYE any");
 

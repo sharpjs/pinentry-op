@@ -9,10 +9,8 @@ use std::io::{self, BufRead};
 use crate::session::*;
 
 fn main() -> io::Result<()> {
-    let mut session = Session::new(
-        get_item_ref()?,
-        io::stdout().lock()
-    );
+    let     item_ref = get_item_ref()?;
+    let mut session  = Session::new(&item_ref, io::stdout().lock());
 
     session.announce()?;
 
