@@ -35,23 +35,66 @@ impl<O: Write> Session<O> {
     }
 
     pub fn handle(&mut self, line: &str) -> io::Result<bool> {
-        let (cmd, rest) = match line.split_once(' ') {
-            Some(pair) => pair,
-            None       => (line, ""),
-        };
+        use State::*;
 
-        let ret = match cmd.to_ascii_uppercase().as_str() {
-            "BYE"        => self.handle_bye(),
-            "RESET"      => self.handle_nop(),          // TODO
-            "HELP"       => self.handle_nop(),          // TODO
-            "OPTION"     => self.handle_option(rest),
-            "GETINFO"    => self.handle_nop(),          // TODO
-            "SETKEYINFO" => self.handle_nop(),          // TODO
-            "SETDESC"    => self.handle_nop(),          // TODO
-            "SETPROMPT"  => self.handle_nop(),          // TODO
-            "GETPIN"     => self.handle_getpin(),
-            "FOO"        => self.handle_unknown(),
-            _            => self.handle_ignored(),
+        enum State {
+            Initial,
+            B, By, Bye,
+            G, Ge, Get, Geti, Getin, Getinf, Getinfo,
+                        Getp, Getpi, Getpin,
+            H, He, Hel, Help,
+            O, Op, Opt, Opti, Optio, Option,
+            R, Re, Res, Rese, Reset,
+        }
+
+        let mut chars = line.chars();
+        let mut state = Initial;
+
+        let ret = loop {
+            let c = chars.next().unwrap_or(' ').to_ascii_uppercase();
+            state = match (state, c) {
+                (Initial, 'B') => B,
+                (B,       'Y') => By,
+                (By,      'E') => Bye,
+                (Bye,     ' ') => break self.handle_bye(),
+
+                (Initial, 'G') => G,     
+                (G,       'E') => Ge,    
+                (Ge,      'T') => Get,   
+                (Get,     'I') => Geti,  
+                (Geti,    'N') => Getin, 
+                (Getin,   'F') => Getinf,
+                (Getinf,  'O') => Getinfo,
+                (Getinfo, ' ') => break self.handle_nop(),
+
+                (Get,     'P') => Getp, 
+                (Getp,    'I') => Getpi,
+                (Getpi,   'N') => Getpin,
+                (Getpin,  ' ') => break self.handle_getpin(),
+
+                (Initial, 'H') => H,  
+                (H,       'E') => He, 
+                (He,      'L') => Hel,
+                (Hel,     'P') => Help,
+                (Help,    ' ') => break self.handle_nop(),
+
+                (Initial, 'O') => O,    
+                (O,       'P') => Op,   
+                (Op,      'T') => Opt,  
+                (Opt,     'I') => Opti, 
+                (Opti,    'O') => Optio,
+                (Optio,   'N') => Option,
+                (Option,  ' ') => break self.handle_option(chars.as_str()),
+
+                (Initial, 'R') => R,   
+                (R,       'E') => Re,  
+                (Re,      'S') => Res, 
+                (Res,     'E') => Rese,
+                (Rese,    'T') => Reset,
+                (Reset,   ' ') => break self.handle_nop(),
+
+                _              => break self.handle_ignored(),
+            };
         };
 
         self.out.flush()?;
