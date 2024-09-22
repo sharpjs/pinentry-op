@@ -209,7 +209,61 @@ mod tests {
     #[test]
     fn bye() {
         with_session()
-        .test("BYE any", false, "OK closing connection\n");
+            .test("Bye", false, "OK closing connection\n")
+        ;
+    }
+
+    #[test]
+    fn getinfo() {
+        with_session()
+            .test("GetInfo",         true, "OK\n")
+            .test("GetInfo Other",   true, "OK\n")
+            .test("GetInfo Version", true, format!("D {}\nOK\n", VERSION))
+            .test("GetInfo Flavor" , true, format!("D {}\nOK\n", FLAVOR))
+            .test("GetInfo Pid",     true, format!("D {}\nOK\n", process::id()))
+            .test("GetInfo TtyInfo", true, "D - - - - 0/0 -\nOK\n")
+        ;
+    }
+
+    #[test]
+    fn help() {
+        with_session()
+            .test("Help", true, HELP)
+        ;
+    }
+
+    #[test]
+    fn option_cache_ok() {
+        with_session()
+            .set_cache_ok(false)
+            .test("Option Allow-External-Password-Cache", true, "OK\n")
+            .assert_cache_ok(true)
+        ;
+    }
+
+    #[test]
+    fn option_other() {
+        with_session()
+            .set_cache_ok(false)
+            .test("Option Other", true, "OK\n")
+            .assert_cache_ok(false)
+        ;
+    }
+
+    #[test]
+    fn reset() {
+        with_session()
+            .set_cache_ok(true)
+            .test("Reset", true, "OK\n")
+            .assert_cache_ok(false)
+        ;
+    }
+
+    #[test]
+    fn other() {
+        with_session()
+            .test("Other", true, "OK\n")
+        ;
     }
 
     #[derive(Debug)]
@@ -220,14 +274,25 @@ mod tests {
     }
 
     impl Harness {
-        fn test(mut self, input: &str, result: bool, output: &str) -> Self {
+        fn set_cache_ok(mut self, v: bool) -> Self
+        {
+            self.0.cache_ok = v;
+            self
+        }
+
+        fn test<O: AsRef<str>>(mut self, input: &str, result: bool, output: O) -> Self {
             let res = self.0.handle(input).unwrap();
             let out = str::from_utf8(&self.0.out[..]).unwrap();
 
             assert_eq!(res, result);
-            assert_eq!(out, output);
+            assert_eq!(out, output.as_ref());
 
             self.0.out.clear();
+            self
+        }
+
+        fn assert_cache_ok(self, v: bool) -> Self {
+            assert_eq!(self.0.cache_ok, v);
             self
         }
     }
