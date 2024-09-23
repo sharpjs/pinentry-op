@@ -280,17 +280,17 @@ mod tests {
     }
 
     impl Harness {
-        fn set_cache_ok(mut self, v: bool) -> Self {
+        fn set_cache_ok(&mut self, v: bool) -> &mut Self {
             self.0.cache_ok = v;
             self
         }
 
-        fn set_getpin_ok(mut self) -> Self {
+        fn set_getpin_ok(&mut self) -> &mut Self {
             self.0.run = run_ok;
             self
         }
 
-        fn test<O: AsRef<str>>(mut self, input: &str, result: bool, output: O) -> Self {
+        fn test<O: AsRef<str>>(&mut self, input: &str, result: bool, output: O) -> &mut Self {
             let res = self.0.handle(input).unwrap();
             let out = str::from_utf8(&self.0.out[..]).unwrap();
 
@@ -301,7 +301,7 @@ mod tests {
             self
         }
 
-        fn assert_cache_ok(self, v: bool) -> Self {
+        fn assert_cache_ok(&mut self, v: bool) -> &mut Self {
             assert_eq!(self.0.cache_ok, v);
             self
         }
