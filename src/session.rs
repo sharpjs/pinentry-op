@@ -1,5 +1,5 @@
 // Copyright Jeffrey Sharp
-// SPDX-License-Identifier: ISC
+// SPDX-License-Identifier: MIT
 
 // References:
 // https://www.gnupg.org/documentation/manuals/gnupg/Agent-Options.html

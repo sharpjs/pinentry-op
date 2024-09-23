@@ -1,5 +1,5 @@
 # Copyright Jeffrey Sharp
-# SPDX-License-Identifier: ISC
+# SPDX-License-Identifier: MIT
 #
 # https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -9,7 +9,7 @@ version     = "0.1.0"
 authors     = ["Jeffrey Sharp"]
 edition     = "2021"
 description = "A GPG pinentry program that forwards passhphrase requests to 1Password"
-license     = "ISC"
+license     = "MIT"
 repository  = "https://github.com/sharpjs/pinentry-op"
 
 [dependencies]

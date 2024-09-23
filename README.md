@@ -45,5 +45,5 @@ gpg --sign --dry-run --yes test.txt
 
 <!--
 Copyright Jeffrey Sharp
-SPDX-License-Identifier: ISC
+SPDX-License-Identifier: MIT
 -->

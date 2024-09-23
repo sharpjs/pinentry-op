@@ -1,5 +1,5 @@
 # Copyright Jeffrey Sharp
-# SPDX-License-Identifier: ISC
+# SPDX-License-Identifier: MIT
 
 /target
 /test.txt*
