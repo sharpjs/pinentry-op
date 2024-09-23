@@ -13,6 +13,7 @@
 
 use std::io::{self, Write};
 use std::process::{self, Command, Output};
+use crate::op;
 
 const FLAVOR:  &str = "op";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -156,7 +157,7 @@ impl<'a, O: Write> Session<'a, O> {
     }
 
     fn handle_getpin(&mut self) -> io::Result<bool> {
-        let pin = get_pin(&self.item_ref, self.run)?;
+        let pin = op::get_pin(&self.item_ref, self.run)?;
         if self.cache_ok {
             writeln!(self.out, "S PASSWORD_FROM_CACHE")?;
         }
@@ -175,33 +176,6 @@ impl<'a, O: Write> Session<'a, O> {
         writeln!(self.out, "OK closing connection")?;
         Ok(false)
     }
-}
-
-fn get_pin(item_ref: &str, run: CommandRunner) -> io::Result<String> {
-    use io::{Error, ErrorKind};
-
-    let result = run(Command::new("op").arg("read").arg(item_ref))?;
-
-    if !result.status.success() {
-        return Err(Error::new(ErrorKind::Other, "1Password CLI encountered an error"));
-    }
-
-    if result.stdout.is_empty() {
-        return Err(Error::new(ErrorKind::InvalidData, "1Password CLI returned empty data"));
-    }
-
-    let mut pin = match String::from_utf8(result.stdout) {
-        Ok (s) => s,
-        Err(e) => return Err(Error::new(ErrorKind::InvalidData, e)),
-    };
-
-    pin.retain(is_not_ascii_newline);
-
-    Ok(pin)
-}
-
-fn is_not_ascii_newline(c: char) -> bool {
-    !matches!(c, '\n' | '\r')
 }
 
 #[cfg(test)]

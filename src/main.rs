@@ -1,6 +1,7 @@
 // Copyright Jeffrey Sharp
 // SPDX-License-Identifier: MIT
 
+mod op;
 mod session;
 
 use std::env;
