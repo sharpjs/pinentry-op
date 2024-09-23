@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: MIT
 
 mod op;
-mod session;
+mod pinentry;
 
 use std::env;
 use std::fs;
 use std::io::{self, BufRead};
-use crate::session::*;
+
+use pinentry::Session;
 
 fn main() -> io::Result<()> {
     let     item_ref = get_item_ref()?;
