@@ -26,12 +26,14 @@ const HELP:    &str = "\
     OK\n\
 ";
 
+type CommandRunner = fn(&mut Command) -> io::Result<Output>;
+
 #[derive(Debug)]
 pub struct Session<'a, O: Write> {
     out:      O,
     item_ref: &'a str,
     cache_ok: bool,
-    run:      fn(&mut Command) -> io::Result<Output>,
+    run:      CommandRunner,
 }
 
 impl<'a, O: Write> Session<'a, O> {
@@ -175,7 +177,7 @@ impl<'a, O: Write> Session<'a, O> {
     }
 }
 
-fn get_pin(item_ref: &str, run: fn(&mut Command) -> io::Result<Output>) -> io::Result<String> {
+fn get_pin(item_ref: &str, run: CommandRunner) -> io::Result<String> {
     use io::{Error, ErrorKind};
 
     let result = run(Command::new("op").arg("read").arg(item_ref))?;
@@ -199,7 +201,7 @@ fn get_pin(item_ref: &str, run: fn(&mut Command) -> io::Result<Output>) -> io::R
 }
 
 fn is_not_ascii_newline(c: char) -> bool {
-    !matches!(c, '\r' | '\n')
+    !matches!(c, '\n' | '\r')
 }
 
 #[cfg(test)]
