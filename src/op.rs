@@ -40,11 +40,11 @@ fn read(item_ref: &str, run: CommandRunner) -> io::Result<String> {
     let result = run(Command::new("op").arg("read").arg(item_ref))?;
 
     if !result.status.success() {
-        return Err(Error::new(ErrorKind::Other, "1Password CLI encountered an error"));
+        return Err(Error::new(ErrorKind::Other, "1Password CLI encountered an error."));
     }
 
     if result.stdout.is_empty() {
-        return Err(Error::new(ErrorKind::InvalidData, "1Password CLI returned empty data"));
+        return Err(Error::new(ErrorKind::InvalidData, "1Password CLI returned empty data."));
     }
 
     let mut pin = match String::from_utf8(result.stdout) {
