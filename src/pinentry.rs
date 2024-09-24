@@ -75,9 +75,15 @@ impl<S: Secret, O: Write> Session<S, O> {
         let mut chars = line.chars();
         let mut state = Initial;
 
+        let mut c = match chars.next() {
+            Some(c) => c,
+            None    => return Ok(true),
+        };
+
         let ret = loop {
-            let c = chars.next().unwrap_or(' ').to_ascii_uppercase();
-            state = match (state, c) {
+            state = match (state, c.to_ascii_uppercase()) {
+                (Initial, '#') => return Ok(true),
+
                 (Initial, 'B') => B,
                 (B,       'Y') => By,
                 (By,      'E') => Bye,
@@ -120,6 +126,8 @@ impl<S: Secret, O: Write> Session<S, O> {
 
                 _              => break self.handle_nop(),
             };
+
+            c = chars.next().unwrap_or(' ');
         };
 
         self.out.flush()?;
@@ -200,14 +208,28 @@ mod tests {
     }
 
     #[test]
-    fn bye() {
+    fn handle_empty() {
+        with_session()
+            .test_handle_ok("", true, "")
+        ;
+    }
+
+    #[test]
+    fn handle_comment() {
+        with_session()
+            .test_handle_ok("# comment", true, "")
+        ;
+    }
+
+    #[test]
+    fn handle_bye() {
         with_session()
             .test_handle_ok("Bye", false, "OK closing connection\n")
         ;
     }
 
     #[test]
-    fn getinfo() {
+    fn handle_getinfo() {
         with_session()
             .test_handle_ok("GetInfo",         true, "OK\n")
             .test_handle_ok("GetInfo Other",   true, "OK\n")
@@ -219,7 +241,7 @@ mod tests {
     }
 
     #[test]
-    fn getpin_ok() {
+    fn handle_getpin_ok() {
         with_session()
             .set_secret(Some(Ok(())))
             .test_handle_ok("GETPIN", true, "D test-pin\nOK\n")
@@ -227,7 +249,7 @@ mod tests {
     }
 
     #[test]
-    fn getpin_ok_cached() {
+    fn handle_getpin_ok_cached() {
         with_session()
             .set_cache_ok(true)
             .set_secret(Some(Ok(())))
@@ -236,7 +258,7 @@ mod tests {
     }
 
     #[test]
-    fn getpin_err() {
+    fn handle_getpin_err() {
         with_session()
             .set_secret(Some(Err(())))
             .test_handle_err("GETPIN")
@@ -244,14 +266,14 @@ mod tests {
     }
 
     #[test]
-    fn help() {
+    fn handle_help() {
         with_session()
             .test_handle_ok("Help", true, HELP)
         ;
     }
 
     #[test]
-    fn option_cache_ok() {
+    fn handle_option_cache_ok() {
         with_session()
             .set_cache_ok(false)
             .test_handle_ok("Option Allow-External-Password-Cache", true, "OK\n")
@@ -260,7 +282,7 @@ mod tests {
     }
 
     #[test]
-    fn option_other() {
+    fn handle_option_other() {
         with_session()
             .set_cache_ok(false)
             .test_handle_ok("Option Other", true, "OK\n")
@@ -269,7 +291,7 @@ mod tests {
     }
 
     #[test]
-    fn reset() {
+    fn handle_reset() {
         with_session()
             .set_cache_ok(true)
             .test_handle_ok("Reset", true, "OK\n")
@@ -278,7 +300,7 @@ mod tests {
     }
 
     #[test]
-    fn other() {
+    fn handle_other() {
         with_session()
             .test_handle_ok("Other", true, "OK\n")
         ;
