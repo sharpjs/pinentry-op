@@ -42,7 +42,7 @@ impl<S: Secret, O: Write> Session<S, O> {
     pub fn new(secret: S, out: O) -> Self {
         Self { out, secret, cache_ok: false }
     }
-    
+
     pub fn run<I: BufRead>(&mut self, input: I) -> io::Result<()> {
         self.announce()?;
 
@@ -54,10 +54,8 @@ impl<S: Secret, O: Write> Session<S, O> {
     }
 
     fn announce(&mut self) -> io::Result<()> {
-        if cfg!(debug_assertions) {
-            writeln!(self.out, "# pinentry-op v0.1.0")?;
-            writeln!(self.out, "# secret: {:?}", self.secret)?;
-        }
+        #[cfg(all(debug_assertions, not(test)))]
+        writeln!(self.out, "# secret: {:?}", self.secret)?;
         writeln!(self.out, "OK pinentry-op ready")
     }
 
@@ -85,37 +83,37 @@ impl<S: Secret, O: Write> Session<S, O> {
                 (By,      'E') => Bye,
                 (Bye,     ' ') => break self.handle_bye(),
 
-                (Initial, 'G') => G,     
-                (G,       'E') => Ge,    
-                (Ge,      'T') => Get,   
-                (Get,     'I') => Geti,  
-                (Geti,    'N') => Getin, 
+                (Initial, 'G') => G,
+                (G,       'E') => Ge,
+                (Ge,      'T') => Get,
+                (Get,     'I') => Geti,
+                (Geti,    'N') => Getin,
                 (Getin,   'F') => Getinf,
                 (Getinf,  'O') => Getinfo,
                 (Getinfo, ' ') => break self.handle_getinfo(chars.as_str()),
 
-                (Get,     'P') => Getp, 
+                (Get,     'P') => Getp,
                 (Getp,    'I') => Getpi,
                 (Getpi,   'N') => Getpin,
                 (Getpin,  ' ') => break self.handle_getpin(),
 
-                (Initial, 'H') => H,  
-                (H,       'E') => He, 
+                (Initial, 'H') => H,
+                (H,       'E') => He,
                 (He,      'L') => Hel,
                 (Hel,     'P') => Help,
                 (Help,    ' ') => break self.handle_help(),
 
-                (Initial, 'O') => O,    
-                (O,       'P') => Op,   
-                (Op,      'T') => Opt,  
-                (Opt,     'I') => Opti, 
+                (Initial, 'O') => O,
+                (O,       'P') => Op,
+                (Op,      'T') => Opt,
+                (Opt,     'I') => Opti,
                 (Opti,    'O') => Optio,
                 (Optio,   'N') => Option,
                 (Option,  ' ') => break self.handle_option(chars.as_str()),
 
-                (Initial, 'R') => R,   
-                (R,       'E') => Re,  
-                (Re,      'S') => Res, 
+                (Initial, 'R') => R,
+                (R,       'E') => Re,
+                (Re,      'S') => Res,
                 (Res,     'E') => Rese,
                 (Rese,    'T') => Reset,
                 (Reset,   ' ') => break self.handle_reset(),
@@ -195,45 +193,60 @@ mod tests {
     use super::*;
 
     #[test]
+    fn announce() {
+        with_session()
+            .test_announce("OK pinentry-op ready\n")
+        ;
+    }
+
+    #[test]
     fn bye() {
         with_session()
-            .test("Bye", false, "OK closing connection\n")
+            .test_handle_ok("Bye", false, "OK closing connection\n")
         ;
     }
 
     #[test]
     fn getinfo() {
         with_session()
-            .test("GetInfo",         true, "OK\n")
-            .test("GetInfo Other",   true, "OK\n")
-            .test("GetInfo Version", true, format!("D {}\nOK\n", VERSION))
-            .test("GetInfo Flavor" , true, format!("D {}\nOK\n", FLAVOR))
-            .test("GetInfo Pid",     true, format!("D {}\nOK\n", process::id()))
-            .test("GetInfo TtyInfo", true, "D - - - - 0/0 -\nOK\n")
+            .test_handle_ok("GetInfo",         true, "OK\n")
+            .test_handle_ok("GetInfo Other",   true, "OK\n")
+            .test_handle_ok("GetInfo Version", true, format!("D {}\nOK\n", VERSION))
+            .test_handle_ok("GetInfo Flavor" , true, format!("D {}\nOK\n", FLAVOR))
+            .test_handle_ok("GetInfo Pid",     true, format!("D {}\nOK\n", process::id()))
+            .test_handle_ok("GetInfo TtyInfo", true, "D - - - - 0/0 -\nOK\n")
         ;
     }
 
     #[test]
-    fn getpin() {
+    fn getpin_ok() {
         with_session()
-            .set_getpin_ok()
-            .test("GETPIN", true, "D test-pin\nOK\n")
+            .set_secret(Some(Ok(())))
+            .test_handle_ok("GETPIN", true, "D test-pin\nOK\n")
         ;
     }
 
     #[test]
-    fn getpin_cache_ok() {
+    fn getpin_ok_cached() {
         with_session()
             .set_cache_ok(true)
-            .set_getpin_ok()
-            .test("GETPIN", true, "S PASSWORD_FROM_CACHE\nD test-pin\nOK\n")
+            .set_secret(Some(Ok(())))
+            .test_handle_ok("GETPIN", true, "S PASSWORD_FROM_CACHE\nD test-pin\nOK\n")
+        ;
+    }
+
+    #[test]
+    fn getpin_err() {
+        with_session()
+            .set_secret(Some(Err(())))
+            .test_handle_err("GETPIN")
         ;
     }
 
     #[test]
     fn help() {
         with_session()
-            .test("Help", true, HELP)
+            .test_handle_ok("Help", true, HELP)
         ;
     }
 
@@ -241,7 +254,7 @@ mod tests {
     fn option_cache_ok() {
         with_session()
             .set_cache_ok(false)
-            .test("Option Allow-External-Password-Cache", true, "OK\n")
+            .test_handle_ok("Option Allow-External-Password-Cache", true, "OK\n")
             .assert_cache_ok(true)
         ;
     }
@@ -250,7 +263,7 @@ mod tests {
     fn option_other() {
         with_session()
             .set_cache_ok(false)
-            .test("Option Other", true, "OK\n")
+            .test_handle_ok("Option Other", true, "OK\n")
             .assert_cache_ok(false)
         ;
     }
@@ -259,7 +272,7 @@ mod tests {
     fn reset() {
         with_session()
             .set_cache_ok(true)
-            .test("Reset", true, "OK\n")
+            .test_handle_ok("Reset", true, "OK\n")
             .assert_cache_ok(false)
         ;
     }
@@ -267,11 +280,12 @@ mod tests {
     #[test]
     fn other() {
         with_session()
-            .test("Other", true, "OK\n")
+            .test_handle_ok("Other", true, "OK\n")
         ;
     }
 
-    type TestSecret = Option<Result<(), ()>>;
+    type TestSecret  = Option<Result<(), ()>>;
+    type TestSession = Session<TestSecret, Vec<u8>>;
 
     impl Secret for TestSecret {
         fn read(&self) -> io::Result<String> {
@@ -282,10 +296,10 @@ mod tests {
         }
     }
 
-    struct Harness(Session<TestSecret, Vec<u8>>);
+    struct Harness(TestSession);
 
     fn with_session() -> Harness {
-        Harness(Session::new(None, vec![]))
+        Harness(TestSession::new(None, vec![]))
     }
 
     impl Harness {
@@ -294,24 +308,36 @@ mod tests {
             self
         }
 
-        fn set_getpin_ok(&mut self) -> &mut Self {
-            self.0.secret = Some(Ok(()));
+        fn set_secret(&mut self, v: TestSecret) -> &mut Self {
+            self.0.secret = v;
             self
         }
 
-        fn test<O: AsRef<str>>(&mut self, input: &str, result: bool, output: O) -> &mut Self {
+        fn test_announce<O: AsRef<str>>(&mut self, output: O) -> &mut Self {
+            self.0.announce().unwrap();
+            self.assert_output(output)
+        }
+
+        fn test_handle_ok<O: AsRef<str>>(&mut self, input: &str, result: bool, output: O) -> &mut Self {
             let res = self.0.handle(input).unwrap();
-            let out = str::from_utf8(&self.0.out[..]).unwrap();
-
             assert_eq!(res, result);
-            assert_eq!(out, output.as_ref());
+            self.assert_output(output)
+        }
 
+        fn test_handle_err(&mut self, input: &str) -> &mut Self {
+            assert!(self.0.handle(input).is_err());
+            self.assert_output("")
+        }
+
+        fn assert_output<O: AsRef<str>>(&mut self, exp: O) -> &mut Self {
+            let actual = str::from_utf8(&self.0.out[..]).unwrap();
+            assert_eq!(actual, exp.as_ref());
             self.0.out.clear();
             self
         }
 
-        fn assert_cache_ok(&mut self, v: bool) -> &mut Self {
-            assert_eq!(self.0.cache_ok, v);
+        fn assert_cache_ok(&mut self, exp: bool) -> &mut Self {
+            assert_eq!(self.0.cache_ok, exp);
             self
         }
     }
