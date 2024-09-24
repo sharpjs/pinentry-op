@@ -6,12 +6,11 @@ mod pinentry;
 
 use std::io::{self, BufRead};
 
-use op::ItemRef;
 use pinentry::Session;
 
 fn main() -> io::Result<()> {
     let mut session = Session::new(
-        ItemRef::load()?,
+        op::get_item_ref()?,
         io::stdout().lock()
     );
 
