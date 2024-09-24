@@ -11,9 +11,9 @@
 // https://developer.1password.com/docs/cli/reference/commands/read
 // https://developer.1password.com/docs/cli/reference/management-commands/item
 
+use std::fmt::Debug;
 use std::io::{self, Write};
-use std::process::{self, Command, Output};
-use crate::op;
+use std::process;
 
 const FLAVOR:  &str = "op";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -27,25 +27,26 @@ const HELP:    &str = "\
     OK\n\
 ";
 
-type CommandRunner = fn(&mut Command) -> io::Result<Output>;
-
-#[derive(Debug)]
-pub struct Session<'a, O: Write> {
-    out:      O,
-    item_ref: &'a str,
-    cache_ok: bool,
-    run:      CommandRunner,
+pub trait Secret: Debug {
+    fn read(&self) -> io::Result<String>;
 }
 
-impl<'a, O: Write> Session<'a, O> {
-    pub fn new(item_ref: &'a str, out: O) -> Self {
-        Self { out, item_ref, cache_ok: false, run: Command::output }
+#[derive(Debug)]
+pub struct Session<S: Secret, O: Write> {
+    out:      O,
+    secret:   S,
+    cache_ok: bool,
+}
+
+impl<S: Secret, O: Write> Session<S, O> {
+    pub fn new(secret: S, out: O) -> Self {
+        Self { out, secret, cache_ok: false }
     }
 
     pub fn announce(&mut self) -> io::Result<()> {
         if cfg!(debug_assertions) {
             writeln!(self.out, "# pinentry-op v0.1.0")?;
-            writeln!(self.out, "# passphrase: {}", self.item_ref)?;
+            writeln!(self.out, "# secret: {:?}", self.secret)?;
         }
         writeln!(self.out, "OK pinentry-op ready")
     }
@@ -157,7 +158,7 @@ impl<'a, O: Write> Session<'a, O> {
     }
 
     fn handle_getpin(&mut self) -> io::Result<bool> {
-        let pin = op::get_pin(&self.item_ref, self.run)?;
+        let pin = self.secret.read()?;
         if self.cache_ok {
             writeln!(self.out, "S PASSWORD_FROM_CACHE")?;
         }
@@ -181,8 +182,6 @@ impl<'a, O: Write> Session<'a, O> {
 #[cfg(test)]
 mod tests {
     use std::str;
-    use process::ExitStatus;
-
     use super::*;
 
     #[test]
@@ -262,21 +261,21 @@ mod tests {
         ;
     }
 
-    #[derive(Debug)]
-    struct Harness(Session<'static, Vec<u8>>);
+    type TestSecret = Option<Result<(), ()>>;
+
+    impl Secret for TestSecret {
+        fn read(&self) -> io::Result<String> {
+            match self.unwrap() {
+                Ok (_) => Ok("test-pin".to_string()),
+                Err(_) => Err(io::Error::new(io::ErrorKind::Other, "Test error.")),
+            }
+        }
+    }
+
+    struct Harness(Session<TestSecret, Vec<u8>>);
 
     fn with_session() -> Harness {
-        let mut session = Session::new("test", vec![]);
-        session.run = run_panic;
-        Harness(session)
-    }
-
-    fn run_ok(_: &mut Command) -> io::Result<Output> {
-        Ok(Output { status: ExitStatus::default(), stdout: b"test-pin".to_vec(), stderr: vec![] })
-    }
-
-    fn run_panic(_: &mut Command) -> io::Result<Output> {
-        panic!()
+        Harness(Session::new(None, vec![]))
     }
 
     impl Harness {
@@ -286,7 +285,7 @@ mod tests {
         }
 
         fn set_getpin_ok(&mut self) -> &mut Self {
-            self.0.run = run_ok;
+            self.0.secret = Some(Ok(()));
             self
         }
 

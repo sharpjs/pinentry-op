@@ -1,8 +1,25 @@
 // Copyright Jeffrey Sharp
 // SPDX-License-Identifier: MIT
 
+use std::fmt::Debug;
 use std::io::{self, Error, ErrorKind};
 use std::process::{Command, Output};
+use crate::pinentry::Secret;
+
+#[derive(Debug)]
+pub struct ItemRef<S: AsRef<str>>(S);
+
+impl<S: AsRef<str>> ItemRef<S> {
+    pub fn new(s: S) -> Self {
+        Self(s)
+    }
+}
+
+impl<S: AsRef<str> + Debug> Secret for ItemRef<S> {
+    fn read(&self) -> io::Result<String> {
+        get_pin(self.0.as_ref(), Command::output)
+    }
+}
 
 type CommandRunner = fn(&mut Command) -> io::Result<Output>;
 

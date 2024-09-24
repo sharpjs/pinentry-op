@@ -8,11 +8,14 @@ use std::env;
 use std::fs;
 use std::io::{self, BufRead};
 
+use op::ItemRef;
 use pinentry::Session;
 
 fn main() -> io::Result<()> {
-    let     item_ref = get_item_ref()?;
-    let mut session  = Session::new(&item_ref, io::stdout().lock());
+    let mut session = Session::new(
+        ItemRef::new(get_item_ref()?),
+        io::stdout().lock()
+    );
 
     session.announce()?;
 
