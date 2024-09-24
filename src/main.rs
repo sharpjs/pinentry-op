@@ -4,8 +4,7 @@
 mod op;
 mod pinentry;
 
-use std::io::{self, BufRead};
-
+use std::io;
 use pinentry::Session;
 
 fn main() -> io::Result<()> {
@@ -14,11 +13,5 @@ fn main() -> io::Result<()> {
         io::stdout().lock()
     );
 
-    session.announce()?;
-
-    for req in io::stdin().lock().lines() {
-        if !session.handle(&*req?)? { break }
-    }
-
-    Ok(())
+    session.run(io::stdin().lock())
 }

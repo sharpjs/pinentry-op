@@ -12,7 +12,7 @@
 // https://developer.1password.com/docs/cli/reference/management-commands/item
 
 use std::fmt::Debug;
-use std::io::{self, Write};
+use std::io::{self, BufRead, Write};
 use std::process;
 
 const FLAVOR:  &str = "op";
@@ -42,8 +42,18 @@ impl<S: Secret, O: Write> Session<S, O> {
     pub fn new(secret: S, out: O) -> Self {
         Self { out, secret, cache_ok: false }
     }
+    
+    pub fn run<I: BufRead>(&mut self, input: I) -> io::Result<()> {
+        self.announce()?;
 
-    pub fn announce(&mut self) -> io::Result<()> {
+        for req in input.lines() {
+            if !self.handle(&*req?)? { break }
+        }
+
+        Ok(())
+    }
+
+    fn announce(&mut self) -> io::Result<()> {
         if cfg!(debug_assertions) {
             writeln!(self.out, "# pinentry-op v0.1.0")?;
             writeln!(self.out, "# secret: {:?}", self.secret)?;
@@ -51,7 +61,7 @@ impl<S: Secret, O: Write> Session<S, O> {
         writeln!(self.out, "OK pinentry-op ready")
     }
 
-    pub fn handle(&mut self, line: &str) -> io::Result<bool> {
+    fn handle(&mut self, line: &str) -> io::Result<bool> {
         use State::*;
 
         enum State {
